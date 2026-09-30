@@ -1,8 +1,7 @@
 import { useState, useEffect } from 'react'
 import ReactMarkdown from 'react-markdown'
 import { categorizeMessage } from '../utils/llmHelper'
-import { calculateUrgency } from '../utils/urgencyScorer'
-import { getRecommendedAction } from '../utils/templates'
+import { getRecommendedAction, shouldEscalate } from '../utils/templates'
 
 function AnalyzePage() {
   const [message, setMessage] = useState('')
@@ -23,26 +22,30 @@ function AnalyzePage() {
       alert('Please enter a message to analyze')
       return
     }
+    if (message.trim().split(/\s+/).length < 2) {
+      alert('Please enter the full customer message (at least a couple of words) so it can be triaged accurately')
+      return
+    }
 
     setIsLoading(true)
     setResults(null)
     
     try {
-      // Run categorization (LLM call)
-      const { category, reasoning } = await categorizeMessage(message)
-      
-      // Calculate urgency (rule-based)
-      const urgency = calculateUrgency(message)
+      // Run triage: category + urgency from the LLM (rule-based fallback if unavailable)
+      const { category, urgency, reasoning, source } = await categorizeMessage(message)
       
       // Get recommended action (template-based)
-      const recommendedAction = getRecommendedAction(category)
+      const recommendedAction = getRecommendedAction(category, urgency)
+      const escalate = shouldEscalate(category, urgency)
       
       const analysisResult = {
         message,
         category,
         urgency,
         recommendedAction,
+        escalate,
         reasoning,
+        source,
         timestamp: new Date().toISOString()
       }
 
@@ -128,6 +131,17 @@ function AnalyzePage() {
         {results && (
           <div className="bg-white rounded-lg shadow-md p-6">
             <h2 className="text-xl font-bold text-gray-900 mb-4">Analysis Results</h2>
+
+            {results.escalate && (
+              <div className="bg-red-50 border border-red-300 text-red-800 rounded-lg p-3 mb-4 font-semibold">
+                🚨 Escalate: high-impact issue, route to the on-call team now
+              </div>
+            )}
+            {results.source === 'rules' && (
+              <div className="bg-yellow-50 border border-yellow-300 text-yellow-800 rounded-lg p-3 mb-4 text-sm">
+                AI unavailable: this result comes from the rule-based fallback. Please double-check it.
+              </div>
+            )}
             
             <div className="space-y-4">
               <div>

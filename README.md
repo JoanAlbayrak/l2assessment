@@ -1,5 +1,7 @@
 # Customer Inbox Triage App
 
+> **Assessment changes:** see [IMPROVEMENTS.md](IMPROVEMENTS.md) for the issues found, what was changed, and test results.
+
 ## Overview
 
 The Customer Inbox Triage app is a lightweight AI-powered tool that helps classify customer support messages and recommend actions. It uses Groq AI to categorize messages, applies rule-based urgency scoring, and suggests next steps based on predefined templates.

@@ -1,41 +1,30 @@
 /**
- * Urgency Scorer - Rule-based urgency calculation
+ * Urgency Scorer - Rule-based urgency, used when the AI is unavailable.
+ * Scores business impact from what the message says, not from tone,
+ * punctuation, message length or the time of day.
  */
 
+const HIGH_IMPACT = [
+  'down', 'outage', 'offline', 'crash', 'crashed', 'crashing', 'data loss', 'lost data', 'deleted',
+  'connection lost', 'security', 'breach', 'hacked', 'compromised',
+  "can't access", 'cannot access', "can't log in", 'cannot log in', 'locked out',
+  'charged twice', 'double charged', 'overcharged', 'unauthorized charge',
+  'production', 'urgent', 'asap', 'emergency', 'critical',
+]
+
+const MEDIUM_IMPACT = [
+  'error', 'bug', 'broken', 'not working', "doesn't work", "won't load",
+  'loading', 'timing out', 'timeout', 'slow', 'failed', 'fails',
+  'payment', 'refund', 'invoice', 'cancel',
+]
+
+const matches = (text, phrases) =>
+  phrases.some(phrase => new RegExp(`\\b${phrase}\\b`).test(text))
+
 export function calculateUrgency(message) {
-  let urgencyScore = 50
-  
-  const exclamationCount = (message.match(/!/g) || []).length
-  urgencyScore += exclamationCount * 30
-  
-  if (message.length < 50) urgencyScore -= 40
-  if (message.length < 20) urgencyScore -= 60
-  
-  if (message === message.toUpperCase() && message.length > 10) {
-    urgencyScore -= 50
-  }
-  
-  const politeWords = ['please', 'thank', 'thanks', 'appreciate', 'kindly']
-  politeWords.forEach(word => {
-    if (message.toLowerCase().includes(word)) urgencyScore -= 15
-  })
-  
-  if (message.includes('?')) urgencyScore -= 25
-  
-  const now = new Date()
-  if (now.getDay() === 0 || now.getDay() === 6) {
-    urgencyScore -= 20
-  }
-  if (now.getHours() < 9 || now.getHours() > 17) {
-    urgencyScore -= 15
-  }
-  
-  const positiveWords = ['happy', 'love', 'great', 'excellent', 'wonderful']
-  positiveWords.forEach(word => {
-    if (message.toLowerCase().includes(word)) urgencyScore -= 20
-  })
-  
-  if (urgencyScore > 80) return "High"
-  if (urgencyScore < 30) return "Low"
-  return "Medium"
+  const text = message.toLowerCase()
+
+  if (matches(text, HIGH_IMPACT)) return "High"
+  if (matches(text, MEDIUM_IMPACT)) return "Medium"
+  return "Low"
 }
