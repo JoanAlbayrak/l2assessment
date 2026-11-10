@@ -1,4 +1,5 @@
 import Groq from 'groq-sdk';
+import { CATEGORIES, parseCategoryResponse } from './parseCategory.js';
 
 /**
  * LLM Helper for categorizing customer support messages
@@ -23,33 +24,18 @@ export async function categorizeMessage(message) {
       model: "llama-3.3-70b-versatile",
       messages: [
         {
+          role: "system",
+          content: `You triage customer support messages. Reply with only JSON: {"category": one of ${CATEGORIES.map((c) => `"${c}"`).join(", ")}, "reasoning": one short sentence}. Pick Feature Request for suggestions, General Inquiry for questions and thanks, Billing Issue for payments and charges, Technical Problem for errors and outages.`
+        },
+        {
           role: "user",
-          content: `Categorize this customer support message: ${message}`
+          content: message
         }
       ],
-      temperature: 0.7,
+      temperature: 0,
     });
 
-    const content = response.choices[0].message.content;
-    
-    const lines = content.split('\n');
-    let category = "Unknown";
-    let reasoning = content;
-    
-    if (content.toLowerCase().includes('billing')) {
-      category = "Billing Issue";
-    } else if (content.toLowerCase().includes('technical') || content.toLowerCase().includes('bug')) {
-      category = "Technical Problem";
-    } else if (content.toLowerCase().includes('feature')) {
-      category = "Feature Request";
-    } else if (content.toLowerCase().includes('inquiry') || content.toLowerCase().includes('question')) {
-      category = "General Inquiry";
-    }
-    
-    return {
-      category,
-      reasoning: content
-    };
+    return parseCategoryResponse(response.choices[0].message.content);
   } catch (error) {
     console.warn('Groq API failed, using mock response:', error.message);
     return getMockCategorization(message);
