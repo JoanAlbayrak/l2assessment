@@ -1,3 +1,5 @@
+import { mentions } from './textMatch.js'
+
 /**
  * Recommendation Templates - maps category (and urgency) to a recommended action
  */
@@ -37,6 +39,7 @@ const ESCALATION_WORDS = ['security', 'breach', 'hacked', 'data loss', 'unauthor
 
 /**
  * Escalate high-urgency messages and anything about security, data loss or double charges.
+ * These words are a policy choice made by the author of this change, not agreed with a support team, so they are meant to be edited.
  * (It used to escalate any message over 100 characters, which says nothing about the problem.)
  *
  * @param {string} category - The message category
@@ -45,6 +48,5 @@ const ESCALATION_WORDS = ['security', 'breach', 'hacked', 'data loss', 'unauthor
  * @returns {boolean} - Whether to escalate
  */
 export function shouldEscalate(category, urgency, message) {
-  const text = String(message ?? '').toLowerCase()
-  return urgency === "High" || ESCALATION_WORDS.some((w) => text.includes(w))
+  return urgency === "High" || mentions(message, ESCALATION_WORDS)
 }

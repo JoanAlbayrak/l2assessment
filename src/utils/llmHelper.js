@@ -1,5 +1,5 @@
 import Groq from 'groq-sdk';
-import { CATEGORIES, parseCategoryResponse } from './parseCategory.js';
+import { categorizeWith } from './categorize.js';
 
 /**
  * LLM Helper for categorizing customer support messages
@@ -13,33 +13,14 @@ const groq = new Groq({
 });
 
 /**
- * Categorize a customer support message using Groq AI
- * 
+ * Categorize a customer support message using Groq AI.
+ * Falls back to the keyword mock when the API is unavailable.
+ *
  * @param {string} message - The customer support message
  * @returns {Promise<{category: string, reasoning: string}>}
  */
-export async function categorizeMessage(message) {
-  try {
-    const response = await groq.chat.completions.create({
-      model: "llama-3.3-70b-versatile",
-      messages: [
-        {
-          role: "system",
-          content: `You triage customer support messages. Reply with only JSON: {"category": one of ${CATEGORIES.map((c) => `"${c}"`).join(", ")}, "reasoning": one short sentence}. Pick Feature Request for suggestions, General Inquiry for questions and thanks, Billing Issue for payments and charges, Technical Problem for errors and outages.`
-        },
-        {
-          role: "user",
-          content: message
-        }
-      ],
-      temperature: 0,
-    });
-
-    return parseCategoryResponse(response.choices[0].message.content);
-  } catch (error) {
-    console.warn('Groq API failed, using mock response:', error.message);
-    return getMockCategorization(message);
-  }
+export function categorizeMessage(message) {
+  return categorizeWith(groq, message, getMockCategorization)
 }
 
 /**
